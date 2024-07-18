@@ -1,0 +1,122 @@
+local g = game local s = g:HttpGet
+local Library = loadstring(s("https://raw.githubusercontent.com/vKhonshu/intro2/main/ui2"))()
+local NotifyLib = loadstring(s("https://raw.githubusercontent.com/vKhonshu/intro/main/ui"))()
+NotifyLib.prompt('Asura - Early Access', 'Welcome', 5)
+
+loadstring(s("https://raw.githubusercontent.com/scripthubekitten/qtoolv3/main/qtoolv3", true))()
+
+Library = loadstring(s("https://raw.githubusercontent.com/vKhonshu/intro2/main/ui2"))()
+NotifyLib.prompt('Tysukiyo.lua', 'Welcome', 5)
+NotifyLib.prompt('Tysukiyo.lua', 'lock was made by Tysukiyo >:)', 5)
+
+getgenv().Prediction = 0.12345
+getgenv().AimPart = "HumanoidRootPart"
+getgenv().Key = "Q"
+getgenv().DisableKey = "P"
+
+getgenv().FOV = true
+getgenv().ShowFOV = false
+getgenv().FOVSize = 55
+
+local p, r, w, a, o, m, n, c, d, v, l = g.Players, g.RunService, g.Workspace, g.GuiService, g.StarterGui, s, g.CurrentCamera, p.LocalPlayer, p:GetMouse(), w.GetGuiInset
+
+local AimlockState, Locked, Victim = true
+
+local SelectedKey, SelectedDisableKey = getgenv().Key, getgenv().DisableKey
+
+function Notify(tx)
+    r:SetCore("SendNotification", {Title = "Tysukiyo.lua", Text = tx, Duration = 5})
+end
+
+if getgenv().Loaded == true then
+    Notify("Aimlock is already loaded!")
+    return
+end
+
+getgenv().Loaded = true
+
+local fov = Drawing.new("Circle")
+fov.Filled, fov.Transparency, fov.Thickness, fov.Color, fov.NumSides = false, 1, 1, Color3.fromRGB(255, 255, 0), 1000
+
+function update()
+    if getgenv().FOV == true then
+        if fov then
+            fov.Radius = getgenv().FOVSize * 2
+            fov.Visible = getgenv().ShowFOV
+            fov.Position = v.new(o.X, o.Y + d(c).Y)
+
+            return fov
+        end
+    end
+end
+
+function WTVP(arg)
+    return n:WorldToViewportPoint(arg)
+end
+
+function WTSP(arg)
+    return n.WorldToScreenPoint(n, arg)
+end
+
+function getClosest()
+    local closestPlayer
+    local shortestDistance = math.huge
+
+    for i, v in p:GetPlayers() do
+        local notKO = v.Character:WaitForChild("BodyEffects")["K.O"].Value ~= true
+        local notGrabbed = v.Character:FindFirstChild("GRABBING_COINSTRAINT") == nil
+
+        if v ~= l and v.Character and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health ~= 0 and v.Character:FindFirstChild(getgenv().AimPart) and notKO and notGrabbed then
+            local pos = c:WorldToViewportPoint(v.Character.PrimaryPart.Position)
+            local magnitude = (v.new(pos.X, pos.Y) - v.new(o.X, o.Y)).magnitude
+
+            if (getgenv().FOV) then
+                if (fov.Radius > magnitude and magnitude < shortestDistance) then
+                    closestPlayer = v
+                    shortestDistance = magnitude
+                end
+            else
+                if (magnitude < shortestDistance) then
+                    closestPlayer = v
+                    shortestDistance = magnitude
+                end
+            end
+        end
+    end
+    return closestPlayer
+end
+
+d.KeyDown:Connect(function(k)
+    SelectedKey = SelectedKey:lower()
+    SelectedDisableKey = SelectedDisableKey:lower()
+    if k == SelectedKey then
+        if AimlockState == true then
+            Locked = not Locked
+            if Locked then
+                Victim = getClosest()
+
+                Notify("Locked on to"..tostring(Victim.Character.Humanoid.DisplayName))
+            else
+                if Victim ~= nil then
+                    Victim = nil
+
+                    Notify("Unlocked!")
+                end
+            end
+        else
+            Notify("Aimlock is not enabled!")
+        end
+    end
+    if k == SelectedDisableKey then
+        AimlockState = not AimlockState
+    end
+end)
+
+r.RenderStepped:Connect(function()
+    update()
+    if AimlockState == true then
+        if Victim ~= nil then
+            c.CFrame = c.new(c.CFrame.p, Victim.Character[getgenv().AimPart].Position + Victim.Character[getgenv().AimPart].Velocity*getgenv().Prediction)
+        end
+    end
+end)
